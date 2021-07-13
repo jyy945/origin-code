@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "server": "node src/server.js"
+  },
+  "dependencies": {
+    "koa": "^2.13.1",
+    "thunkify": "^2.1.2"
+  }
+}
