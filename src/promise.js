@@ -19,15 +19,18 @@ class Promise{
         this.callbacks.forEach(cb => this.handler(cb))
     }
     reject(error){
-        this.state =
-
+        this.state = 'rejected'
+        this.value = error
+        this.callbacks.forEach(cb => this.handler(cb))
     }
-    then(onFulfilled){
-        return new Promise(resolve => {
+    then(onFulfilled, onRejected){
+        return new Promise((resolve, reject) => {
             if(this.state === 'pending'){
                 this.callbacks.push({
+                    onRejected,
                     onFulfilled,
-                    resolve
+                    resolve,
+                    reject
                 })
             }else{
                 this.handler({
@@ -38,11 +41,35 @@ class Promise{
         })
     }
     handler(callback){
-        if(!callback.onFulfilled){
-            callback.resolve(this.value)
-        }else{
-            callback.resolve(callback.onFulfilled(this.value))
+        let cb = this.state === 'fulfilled' ? callback.onFulfilled : callback.onRejected
+        if(!cb){
+            cb = this.state === 'fulfilled' ? callback.resolve : callback.reject
+            cb(this.value)
+            return
         }
+        let ret
+        try{
+            ret = cb(this.value);
+            cb = this.state === 'fulfilled' ? callback.resolve : callback.reject;
+
+        }catch(error){
+            ret = error
+            cb = callback.reject
+        }finally {
+            cb(ret);
+        }
+
+    }
+    catch(onError){
+        return this.then(null, onError)
+    }
+    finally(onDone) {
+        if (typeof onDone !== 'function') return this.then();
+        let Promise = this.constructor;
+        return this.then(
+            value => Promise.resolve(onDone()).then(() => value),
+            reason => Promise.resolve(onDone()).then(() => { throw reason })
+        );
     }
 }
 
